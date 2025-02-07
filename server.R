@@ -19,7 +19,12 @@ load.lib <- c("shiny",
               "paletteer",
               "udpipe",
               "openxlsx",
-              "stringr"
+              "stringr",
+              "ggthemes",
+              "tools",
+              "scales",
+              "RColorBrewer",
+              "bslib"
 ) # Ce sont les paquets dont on va avoir besoin
 
 install.lib <- load.lib[!load.lib %in% installed.packages()] # On regarde les paquets qui ne sont pas installés
