@@ -24,7 +24,8 @@ load.lib <- c("shiny",
               "tools",
               "scales",
               "RColorBrewer",
-              "bslib"
+              "bslib",
+              "tibble"
 ) # Ce sont les paquets dont on va avoir besoin
 
 install.lib <- load.lib[!load.lib %in% installed.packages()] # On regarde les paquets qui ne sont pas installés
@@ -33,7 +34,7 @@ for (lib in install.lib) install.packages(lib,dependencies=TRUE) # On installe c
 
 sapply(load.lib,require,character=TRUE) # Et on charge tous les paquets nécessaires
 
-french_stopwords<-read.csv2("french_stopwords.csv")
+french_stopwords<-read.csv2("http://mathieuferry.github.io/datasets/french_stopwords.csv")
 
 options(shiny.maxRequestSize=100*1024^2)
 
@@ -944,7 +945,11 @@ server <- function(input, output, session) {
     if(input$remove_symbols) tokenc <- tokens(tokenc, remove_symbols = TRUE) %>% as.tokens()
     if(input$to_lower) tokenc <- tokens_tolower(tokenc)
     if(input$remove_stopwords) {
-      tokenc <- tokens_remove(tokenc, stopwords(input$stopwords_lang))
+      if(input$stopwords_lang %in% c("english", "french", "german", "spanish", "italian")){
+        tokenc <- tokens_remove(tokenc, stopwords(input$stopwords_lang))
+      }else if(input$stopwords_lang %in% c("french-bastin")){
+        tokenc <- tokens_remove(tokenc, french_stopwords$token)
+      }
     }
     if(input$remove_manualpwords & input$words_to_rm!="") {
       man_torm<-trimws(unlist(strsplit(input$words_to_rm,",")))
@@ -1157,7 +1162,7 @@ server <- function(input, output, session) {
       mutate(across(where(is.numeric), dense_rank, .names = "{.col}"))
     
     if (input$gda_method == "Principal Component Analysis") {
-      pca_res <- PCA(combined_matrixp, 
+      pca_res <- FactoMineR::PCA(combined_matrixp, 
                      scale.unit = TRUE, 
                      graph = FALSE,
                      quali.sup = quali_sup)
@@ -1165,7 +1170,7 @@ server <- function(input, output, session) {
                   result = pca_res))
       
     } else {
-      ca_res <- CA(combined_matrix, 
+      ca_res <- FactoMineR::CA(combined_matrix, 
                    graph = FALSE,
                    quali.sup = quali_sup)
       return(list(type = "Correspondence Analysis", 
@@ -1496,7 +1501,7 @@ server <- function(input, output, session) {
       
       fcm<- fcm(dtmsplit, context="document")
       fcm_selected <- fcm_select(fcm, pattern = featsplit, selection = "keep")
-      textplot_network(fcm_selected)
+      textplot_network(fcm_selected,vertex_labelsize = input$coocc_size * rowSums(fcm_selected)/min(rowSums(fcm_selected)))
       
       
     } else if(input$what_coocc=="Co-occurrences between 50 most frequent features" & input$where_coocc=="Filtered corpus"){
@@ -1514,7 +1519,7 @@ server <- function(input, output, session) {
       
       fcm<- fcm(dtmsplit, context="document")
       fcm_selected <- fcm_select(fcm, pattern = featsplit, selection = "keep")
-      textplot_network(fcm_selected)
+      textplot_network(fcm_selected,vertex_labelsize = input$coocc_size * rowSums(fcm_selected)/min(rowSums(fcm_selected)))
       
       
     } else if(input$what_coocc=="Co-occurrences of a word" & input$word_coocc!="" & input$where_coocc=="Filtered corpus"){
@@ -1541,7 +1546,7 @@ server <- function(input, output, session) {
           coord_flip()+
           labs(y="Number of co-occurrences\nin segments",x=paste0("Most frequent words\nco-occurring with ",feat))+
           theme_minimal()+
-          theme(axis.text=element_text(size=15),axis.title = element_text(size=15))
+          theme(axis.text=element_text(size=15*input$coocc_size),axis.title = element_text(size=15))
         p
       },error = function(e) {
         showNotification(paste("Error reading file:", e$message), type = "error")
@@ -1567,7 +1572,7 @@ server <- function(input, output, session) {
           coord_flip()+
           labs(y="Number of co-occurrences\nin segments",x=paste0("Most frequent words\nco-occurring with ",feat))+
           theme_minimal()+
-          theme(axis.text=element_text(size=15),axis.title = element_text(size=15))
+          theme(axis.text=element_text(size=15*input$coocc_size),axis.title = element_text(size=15))
         p
       },error = function(e) {
         showNotification(paste("Error reading file:", e$message), type = "error")
@@ -1810,11 +1815,11 @@ server <- function(input, output, session) {
       dtmclust <- dfm_group(dtmsplit(), groups = clustmemb)
       
     }
-    dtmdat <- cbind(convert(dtmclust, to = "data.frame"), docvars(dtmclust)) %>% column_to_rownames("doc_id")
+    dtmdat <- cbind(convert(dtmclust, to = "data.frame"), docvars(dtmclust)) %>% tibble::column_to_rownames("doc_id")
     
     dtmdatsel <- dtmdat %>% select(all_of(keytermsdat$feature))
     
-    ca <- CA(dtmdatsel, graph = FALSE)
+    ca <- FactoMineR::CA(dtmdatsel, graph = FALSE)
     
     coord <- data.frame(ca$col$coord) %>% rownames_to_column("feature")
     coord <- coord %>% left_join(keytermsdat, by = "feature")
