@@ -1658,26 +1658,24 @@ server <- function(input, output, session) {
   #   print(table_data)
   # })
   
-  output$document_table <- renderTable({
+  output$document_table <- renderUI({
     req(clust(), input$selected_class)
     
     tryCatch({
-      
-      if(input$howclass=="Simple Descendant Hierarchical Classification"){
+      if (input$howclass == "Simple Descendant Hierarchical Classification") {
         class_assignments <- cutree_rainette(clust(), k = input$maxk)
-      }else if(input$howclass=="Dual Descendant Hierarchical Classification"){
+      } else if (input$howclass == "Dual Descendant Hierarchical Classification") {
         class_assignments <- cutree_rainette2(clust(), k = input$maxk)
-        
       }
       
       docs <- which(class_assignments == as.integer(input$selected_class))
       
-      if(input$whatclass == "Documents") {
+      if (input$whatclass == "Documents") {
         texts <- data.frame(
           Document_id = docs,
           Content = as.character(corpnotransf()[docs])
         )
-      } else if(input$whatclass == "Segments") {
+      } else if (input$whatclass == "Segments") {
         segment_ids <- docs
         segment_sources <- docvars(corpnotransfsplit())$segment_source[docs]
         contents <- as.character(corpnotransfsplit()[docs])
@@ -1685,26 +1683,41 @@ server <- function(input, output, session) {
         texts <- data.frame(
           Document_id = sub('text','',segment_sources),
           Segment_id = segment_ids,
-          
           Content = contents
         )
       }
       
       search_word <- input$search_word
       
-      if(nchar(search_word) > 0 && !is.null(texts$content)) {
-        texts <- texts[grep(search_word, texts$content, ignore.case = TRUE), ]
+      if (nchar(search_word) > 0 && !is.null(texts$Content)) {
+        texts <- texts[grep(search_word, texts$Content, ignore.case = TRUE), ]
+        
+        # Highlight occurrences of the search word
+        highlight_word <- function(text, word) {
+          gsub(paste0("(", word, ")"), "<mark>\\1</mark>", text, ignore.case = TRUE, perl = TRUE)
+        }
+        
+        texts$Content <- sapply(texts$Content, highlight_word, word = search_word)
       }
       
-      if(nrow(texts) > 0) {
-        texts
+      if (nrow(texts) > 0) {
+        HTML(
+          paste(
+            apply(texts, 1, function(row) {
+              paste0("<b>Document ID:</b> ", row["Document_id"], "<br>",
+                     if ("Segment_id" %in% names(row)) paste0("<b>Segment ID:</b> ", row["Segment_id"], "<br>") else "",
+                     "<b>Content:</b> ", row["Content"], "<hr>")
+            }),
+            collapse = ""
+          )
+        )
       } else {
-        data.frame(message = "No documents/segments found matching the criteria")
+        HTML("<p>No documents/segments found matching the criteria</p>")
       }
     }, error = function(e) {
-      data.frame(error = paste("An error occurred:", e$message))
+      HTML(paste("<p style='color: red;'>An error occurred:", e$message, "</p>"))
     })
-  }, sanitize.text.function = function(x) x)
+  })
   
   # Add cluster variable(s) --------------------
   

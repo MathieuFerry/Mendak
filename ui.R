@@ -337,7 +337,7 @@ ui <- fluidPage(
                                                 uiOutput("class_selector"),
                                                 textInput("search_word", "Filter documents (type to search):", ""),
                                                 
-                                                tableOutput("document_table")
+                                                uiOutput("document_table")
                                                 
                                        ),
                                        tabPanel("Correspondance Analysis",
