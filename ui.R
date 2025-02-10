@@ -25,7 +25,8 @@ load.lib <- c("shiny",
               "scales",
               "RColorBrewer",
               "bslib",
-              "tibble"
+              "tibble",
+              "parallel"
 ) # Ce sont les paquets dont on va avoir besoin
 
 install.lib <- load.lib[!load.lib %in% installed.packages()] # On regarde les paquets qui ne sont pas installés

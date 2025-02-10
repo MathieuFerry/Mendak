@@ -25,7 +25,8 @@ load.lib <- c("shiny",
               "scales",
               "RColorBrewer",
               "bslib",
-              "tibble"
+              "tibble",
+              "parallel"
 ) # Ce sont les paquets dont on va avoir besoin
 
 install.lib <- load.lib[!load.lib %in% installed.packages()] # On regarde les paquets qui ne sont pas installés
@@ -1607,7 +1608,7 @@ server <- function(input, output, session) {
         result2 <- rainette(dtm, k = input$maxk,min_segment_size=input$minseg_dual2)
         #result2 <- rainette(dtm, k = 4,min_segment_size=15)
         
-        result <- rainette2(result1, result2, max_k = input$maxk,full = TRUE,parallel = TRUE)
+        result <- rainette2(result1, result2, max_k = input$maxk,full = FALSE,parallel = TRUE)
         #result <- rainette2(result1, result2, max_k = 4,full = TRUE,parallel = TRUE)
         
       }
