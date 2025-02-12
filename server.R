@@ -26,7 +26,8 @@ load.lib <- c("shiny",
               "RColorBrewer",
               "bslib",
               "tibble",
-              "parallel"
+              "parallel",
+              "forcats"
 ) # Ce sont les paquets dont on va avoir besoin
 
 install.lib <- load.lib[!load.lib %in% installed.packages()] # On regarde les paquets qui ne sont pas installés
@@ -458,30 +459,62 @@ server <- function(input, output, session) {
     data<-dataset()
     var <- input$var_uni
     if(is.numeric(data[[var]])) {
+      if(input$axisflip_uni){
+        ggplot(dataset(), aes(x=forcats::fct_rev(!!sym(var)))) + 
+          geom_histogram(binwidth=1)+
+          labs(title=paste("Histogram of", var),x=var)+
+          coord_flip()+
+          theme_minimal()+
+          theme(axis.text=element_text(size=18),axis.title=element_text(size=18))
+      } else{
       ggplot(dataset(), aes(x=!!sym(var))) + 
         geom_histogram(binwidth=1)+
         labs(title=paste("Histogram of", var),x=var)+
         theme_minimal()+
         theme(axis.text=element_text(size=18),axis.title=element_text(size=18))
+      }
       
     } else {
       result<-data %>% count(!!sym(var)) %>% mutate(proportion=round(n/sum(n)*100,2))
       if(input$calc_uni=="Frequency (N)"){
-        ggplot(data=result, aes(x=!!sym(var), y=n)) +
-          geom_bar(stat="identity")+
-          geom_text(aes(label=n), vjust=1.6, color="white", size=6)+
-          labs(title=paste("Barplot of", var),x=var)+
-          theme_minimal()+
-          theme(axis.text=element_text(size=18),axis.title=element_text(size=18))
+        if(input$axisflip_uni){
+          ggplot(data=result, aes(x=forcats::fct_rev(!!sym(var)), y=n)) +
+            geom_bar(stat="identity")+
+            geom_text(aes(label=n), hjust= 1.6,  color="white", size=6)+
+            labs(title=paste("Barplot of", var),x=var)+
+            coord_flip()+
+            theme_minimal()+
+            theme(axis.text=element_text(size=18),axis.title=element_text(size=18))
+        } else {
+          ggplot(data=result, aes(x=!!sym(var), y=n)) +
+            geom_bar(stat="identity")+
+            geom_text(aes(label=n), vjust=1.6, color="white", size=6)+
+            labs(title=paste("Barplot of", var),x=var)+
+            theme_minimal()+
+            theme(axis.text=element_text(size=18),axis.title=element_text(size=18))
+        }
+        
         
       }
       else{
-        ggplot(data=result, aes(x=!!sym(var), y=proportion)) +
-          geom_bar(stat="identity")+
-          geom_text(aes(label=paste0(round(proportion,1),"%")), vjust=1.6, color="white", size=6)+
-          labs(title=paste("Barplot of", var),x=var)+
-          theme_minimal()+
-          theme(axis.text=element_text(size=18),axis.title=element_text(size=18))
+        if(input$axisflip_uni){
+          ggplot(data=result, aes(x=forcats::fct_rev(!!sym(var)), y=proportion)) +
+            geom_bar(stat="identity")+
+            geom_text(aes(label=paste0(round(proportion,1),"%")),hjust= 1.6,  color="white", size=6)+
+            coord_flip()+
+            labs(title=paste("Barplot of", var),x=var)+
+            theme_minimal()+
+            theme(axis.text=element_text(size=18),axis.title=element_text(size=18))
+          
+        } else {
+          ggplot(data=result, aes(x=!!sym(var), y=proportion)) +
+            geom_bar(stat="identity")+
+            geom_text(aes(label=paste0(round(proportion,1),"%")), vjust=1.6, color="white", size=6)+
+            labs(title=paste("Barplot of", var),x=var)+
+            theme_minimal()+
+            theme(axis.text=element_text(size=18),axis.title=element_text(size=18))
+          
+        }
         
       }
     }
@@ -647,18 +680,24 @@ server <- function(input, output, session) {
     var_bi_exp <- data[[input$var_bi_exp]]
     
     if(is.numeric(var_bi) && is.factor(var_bi_exp)) {
-      ggplot(data, aes(x = !!sym(input$var_bi_exp), y = !!sym(input$var_bi))) +
-        geom_boxplot() +
-        labs(x = input$var_bi_exp, y = input$var_bi) +
-        theme_minimal()+
-        theme(axis.title = element_text(size=18),axis.text = element_text(size=18))
+
+        ggplot(data, aes(x = !!sym(input$var_bi_exp), y = !!sym(input$var_bi))) +
+          geom_boxplot() +
+          labs(x = input$var_bi_exp, y = input$var_bi) +
+          theme_minimal()+
+          theme(axis.title = element_text(size=18),axis.text = element_text(size=18))
+        
+      
     } else if(is.numeric(var_bi) && is.numeric(var_bi_exp)) {
-      ggplot(data, aes(x = !!sym(input$var_bi_exp), y = !!sym(input$var_bi))) +
-        geom_point() +
-        geom_smooth(method = "lm") +
-        labs(x = input$var_bi_exp, y = input$var_bi,caption=paste("Pearson's correlation: ",sprintf('%#.2f',cor(var_bi,var_bi_exp,use="complete.obs")))) +
-        theme_minimal()+
-        theme(axis.title = element_text(size=18),axis.text = element_text(size=18),plot.caption = element_text(size=18))
+
+        ggplot(data, aes(x = !!sym(input$var_bi_exp), y = !!sym(input$var_bi))) +
+          geom_point() +
+          geom_smooth(method = "lm") +
+          labs(x = input$var_bi_exp, y = input$var_bi,caption=paste("Pearson's correlation: ",sprintf('%#.2f',cor(var_bi,var_bi_exp,use="complete.obs")))) +
+          theme_minimal()+
+          theme(axis.title = element_text(size=18),axis.text = element_text(size=18),plot.caption = element_text(size=18))
+        
+
       
     } else if(is.factor(var_bi) && is.numeric(var_bi_exp)) {
       

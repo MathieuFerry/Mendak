@@ -26,7 +26,8 @@ load.lib <- c("shiny",
               "RColorBrewer",
               "bslib",
               "tibble",
-              "parallel"
+              "parallel",
+              "forcats"
 ) # Ce sont les paquets dont on va avoir besoin
 
 install.lib <- load.lib[!load.lib %in% installed.packages()] # On regarde les paquets qui ne sont pas installés
@@ -120,7 +121,9 @@ ui <- fluidPage(
                                  sidebarLayout(
                                    sidebarPanel(
                                      uiOutput("var_select_uni"),
-                                     uiOutput("var_calc_uni")
+                                     uiOutput("var_calc_uni"),
+                                     checkboxInput("axisflip_uni", "Flip x and y axes", FALSE),
+                                     
                                      
                                    ),
                                    mainPanel(
@@ -135,7 +138,7 @@ ui <- fluidPage(
                                      uiOutput("var_select_bi"),
                                      uiOutput("var_select_bi_exp"),
                                      uiOutput("display_option")
-                                     
+
                                    ),
                                    mainPanel(
                                      DTOutput("bivariate_table"),
